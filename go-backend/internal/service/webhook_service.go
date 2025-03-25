@@ -116,6 +116,11 @@ If the caller appears genuine and you can forward them to Ms. Johnson:
 1. **Offer to connect**: “Thank you for letting me know. One moment while I see if Ms. Johnson is available.”
 2. **Confirm**: “Thank you for your patience. Please hold, and I’ll connect you now. Have a nice day.”
 
+if the user says the keyphrase "transfer to ms. johnson"
+then proceed to transfer the call
+[TASK]
+trigger the dynamicDestinationTransferCall tool
+
 For calls that conclude with a resolution or scheduled follow-up:
 - “I’ve noted your message for Ms. Johnson. We’ll be in touch if there’s any further information needed. Thank you and have a wonderful day.”
 
@@ -216,4 +221,15 @@ func (s *WebhookService) handleStatusUpdate(msg model.WebhookMessage) error {
 	}
 
 	return nil
+}
+
+func (s *WebhookService) HandleForwardWebhook(ctx context.Context, forwardPayload VAPIForwardPayload) (VAPIForwardResponse, error) {
+	fmt.Println("Received forward webhook payload", forwardPayload)
+	return VAPIForwardResponse{
+		Destination: ForwardDestination{
+			Type:    "number",
+			Message: "Connecting you to our support line.",
+			Number:  "+19548023369",
+		},
+	}, nil
 }
