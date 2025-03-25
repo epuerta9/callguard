@@ -12,14 +12,12 @@ import (
 // CallLogHandler handles HTTP requests related to call logs
 type CallLogHandler struct {
 	callLogRepo *repository.CallLogRepository
-	tagRepo     *repository.TagRepository
 }
 
 // NewCallLogHandler creates a new CallLogHandler
-func NewCallLogHandler(callLogRepo *repository.CallLogRepository, tagRepo *repository.TagRepository) *CallLogHandler {
+func NewCallLogHandler(callLogRepo *repository.CallLogRepository) *CallLogHandler {
 	return &CallLogHandler{
 		callLogRepo: callLogRepo,
-		tagRepo:     tagRepo,
 	}
 }
 
@@ -31,7 +29,6 @@ func (h *CallLogHandler) RegisterRoutes(e *echo.Echo) {
 	callLogs.GET("/:id", h.GetCallLog)
 	callLogs.PUT("/:id", h.UpdateCallLog)
 	callLogs.DELETE("/:id", h.DeleteCallLog)
-	callLogs.GET("/:id/tags", h.GetCallLogTags)
 }
 
 // ListCallLogs handles GET /api/call-logs
@@ -141,19 +138,4 @@ func (h *CallLogHandler) DeleteCallLog(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
-}
-
-// GetCallLogTags handles GET /api/call-logs/:id/tags
-func (h *CallLogHandler) GetCallLogTags(c echo.Context) error {
-	id := c.Param("id")
-	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing call log ID")
-	}
-
-	tags, err := h.tagRepo.GetTagsForCallLog(c.Request().Context(), id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve tags")
-	}
-
-	return c.JSON(http.StatusOK, tags)
 }

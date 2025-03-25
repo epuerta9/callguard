@@ -10,29 +10,15 @@ import (
 )
 
 type CallLog struct {
-	ID             uuid.UUID          `json:"id"`
-	UserID         uuid.UUID          `json:"user_id"`
-	CallerNumber   string             `json:"caller_number"`
-	CallDuration   int32              `json:"call_duration"`
-	RecordingUrl   pgtype.Text        `json:"recording_url"`
-	Transcript     pgtype.Text        `json:"transcript"`
-	SentimentScore pgtype.Float8      `json:"sentiment_score"`
-	RiskScore      pgtype.Float8      `json:"risk_score"`
-	Flagged        bool               `json:"flagged"`
-	Notes          pgtype.Text        `json:"notes"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-}
-
-type CallLogsTag struct {
-	CallLogID uuid.UUID `json:"call_log_id"`
-	TagID     uuid.UUID `json:"tag_id"`
-}
-
-type Tag struct {
-	ID        uuid.UUID          `json:"id"`
-	Name      string             `json:"name"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID                     uuid.UUID          `json:"id"`
+	UserID                 uuid.UUID          `json:"user_id"`
+	VoiceAssistantID       pgtype.UUID        `json:"voice_assistant_id"`
+	CallerNumber           string             `json:"caller_number"`
+	CallDuration           int32              `json:"call_duration"`
+	Transcript             pgtype.Text        `json:"transcript"`
+	IsPotentiallyMalicious bool               `json:"is_potentially_malicious"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {
@@ -44,7 +30,11 @@ type User struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
-// Queries provides database operations
-type Queries struct {
-	db DBTX
+type VoiceAssistant struct {
+	ID            uuid.UUID          `json:"id"`
+	UserID        uuid.UUID          `json:"user_id"`
+	AssistantName string             `json:"assistant_name"`
+	PhoneNumber   string             `json:"phone_number"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }

@@ -11,27 +11,24 @@ import (
 )
 
 type Querier interface {
-	AddTagToCallLog(ctx context.Context, arg AddTagToCallLogParams) error
 	CreateCallLog(ctx context.Context, arg CreateCallLogParams) (CallLog, error)
-	CreateTag(ctx context.Context, name string) (Tag, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateVoiceAssistant(ctx context.Context, arg CreateVoiceAssistantParams) (VoiceAssistant, error)
 	DeleteCallLog(ctx context.Context, id uuid.UUID) error
-	DeleteTag(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	DeleteVoiceAssistant(ctx context.Context, id uuid.UUID) error
 	GetCallLogByID(ctx context.Context, id uuid.UUID) (CallLog, error)
-	GetTagByID(ctx context.Context, id uuid.UUID) (Tag, error)
-	GetTagByName(ctx context.Context, name string) (Tag, error)
-	GetTagsForCallLog(ctx context.Context, callLogID uuid.UUID) ([]Tag, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetVoiceAssistantByID(ctx context.Context, id uuid.UUID) (VoiceAssistant, error)
 	ListCallLogs(ctx context.Context, arg ListCallLogsParams) ([]CallLog, error)
 	ListCallLogsByUserID(ctx context.Context, arg ListCallLogsByUserIDParams) ([]CallLog, error)
-	ListTags(ctx context.Context, arg ListTagsParams) ([]Tag, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
-	RemoveTagFromCallLog(ctx context.Context, arg RemoveTagFromCallLogParams) error
+	ListVoiceAssistants(ctx context.Context, arg ListVoiceAssistantsParams) ([]VoiceAssistant, error)
+	ListVoiceAssistantsByUserID(ctx context.Context, arg ListVoiceAssistantsByUserIDParams) ([]VoiceAssistant, error)
 	UpdateCallLog(ctx context.Context, arg UpdateCallLogParams) (CallLog, error)
-	UpdateTag(ctx context.Context, arg UpdateTagParams) (Tag, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateVoiceAssistant(ctx context.Context, arg UpdateVoiceAssistantParams) (VoiceAssistant, error)
 }
 
 var _ Querier = (*Queries)(nil)

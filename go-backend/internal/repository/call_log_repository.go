@@ -116,42 +116,47 @@ func (r *CallLogRepository) ListByUserID(ctx context.Context, userID string, pag
 
 // Create creates a new call log
 func (r *CallLogRepository) Create(ctx context.Context, req *model.CreateCallLogRequest, userID string) (*model.CallLog, error) {
-	// Placeholder implementation
-	return &model.CallLog{
-		ID:             uuid.New().String(),
-		UserID:         userID,
-		CallerNumber:   req.CallerNumber,
-		CallDuration:   req.CallDuration,
-		RecordingURL:   req.RecordingURL,
-		Transcript:     req.Transcript,
-		SentimentScore: pointerFloat64(req.SentimentScore),
-		RiskScore:      pointerFloat64(req.RiskScore),
-		Flagged:        req.Flagged,
-		Notes:          req.Notes,
-		Tags:           nil,
-		CreatedAt:      "2023-06-01T10:00:00Z",
-		UpdatedAt:      "2023-06-01T10:00:00Z",
-	}, nil
+	// Convert userID to UUID
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the call log
+	dbLog, err := r.db.CreateCallLog(ctx, db.CreateCallLogParams{
+		UserID:       userUUID,
+		CallerNumber: req.CallerNumber,
+		CallDuration: int32(req.CallDuration),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the created call log with tags
+	return r.GetByID(ctx, dbLog.ID.String())
 }
 
 // Update updates an existing call log
 func (r *CallLogRepository) Update(ctx context.Context, id string, req *model.UpdateCallLogRequest) (*model.CallLog, error) {
-	// Placeholder implementation
-	return &model.CallLog{
-		ID:             id,
-		UserID:         uuid.New().String(),
-		CallerNumber:   req.CallerNumber,
-		CallDuration:   req.CallDuration,
-		RecordingURL:   req.RecordingURL,
-		Transcript:     req.Transcript,
-		SentimentScore: pointerFloat64(req.SentimentScore),
-		RiskScore:      pointerFloat64(req.RiskScore),
-		Flagged:        req.Flagged,
-		Notes:          req.Notes,
-		Tags:           nil,
-		CreatedAt:      "2023-06-01T10:00:00Z",
-		UpdatedAt:      "2023-06-01T11:00:00Z",
-	}, nil
+	// Convert id to UUID
+	callLogID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update the call log
+	_, err = r.db.UpdateCallLog(ctx, db.UpdateCallLogParams{
+		ID:           callLogID,
+		CallerNumber: req.CallerNumber,
+		CallDuration: int32(req.CallDuration),
+		Transcript:   pgtype.Text{String: req.Transcript, Valid: req.Transcript != ""},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the updated call log with tags
+	return r.GetByID(ctx, id)
 }
 
 // Delete deletes a call log
@@ -163,19 +168,14 @@ func (r *CallLogRepository) Delete(ctx context.Context, id string) error {
 // convertDBCallLogToCallLog converts a db.CallLog to a model.CallLog
 func convertDBCallLogToCallLog(dbLog db.CallLog) *model.CallLog {
 	return &model.CallLog{
-		ID:             dbLog.ID.String(),
-		UserID:         dbLog.UserID.String(),
-		CallerNumber:   dbLog.CallerNumber,
-		CallDuration:   int(dbLog.CallDuration),
-		RecordingURL:   dbLog.RecordingUrl.String,
-		Transcript:     dbLog.Transcript.String,
-		SentimentScore: nullableFloat64(dbLog.SentimentScore),
-		RiskScore:      nullableFloat64(dbLog.RiskScore),
-		Flagged:        dbLog.Flagged,
-		Notes:          dbLog.Notes.String,
-		Tags:           nil,
-		CreatedAt:      dbLog.CreatedAt.Time.Format(time.RFC3339),
-		UpdatedAt:      dbLog.UpdatedAt.Time.Format(time.RFC3339),
+		ID:           dbLog.ID.String(),
+		UserID:       dbLog.UserID.String(),
+		CallerNumber: dbLog.CallerNumber,
+		CallDuration: int(dbLog.CallDuration),
+		Transcript:   dbLog.Transcript.String,
+		Tags:         nil,
+		CreatedAt:    dbLog.CreatedAt.Time.Format(time.RFC3339),
+		UpdatedAt:    dbLog.UpdatedAt.Time.Format(time.RFC3339),
 	}
 }
 

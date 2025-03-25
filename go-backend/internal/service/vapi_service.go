@@ -22,41 +22,93 @@ func NewVapiService(client *vapiclient.Client) *VapiService {
 }
 
 // CreateAssistant creates a new Vapi assistant with the given configuration
-func (s *VapiService) CreateAssistant(ctx context.Context, systemPrompt string, endCallPhrases []string) (*api.Assistant, error) {
-	assistant, err := s.client.Assistants.Create(ctx, &api.CreateAssistantDto{
-		FirstMessage: api.String("Hi there, I see you're calling about ms. Johnson. How can I help you today?"),
-		Model: &api.CreateAssistantDtoModel{
-			OpenAiModel: &api.OpenAiModel{
-				Model: "gpt-4o-mini",
-				Messages: []*api.OpenAiMessage{
+func (s *VapiService) CreateAssistant(ctx context.Context, systemPrompt string, endCallPhrases []string) (AssistantResponse, error) {
+	// payload := &api.CreateAssistantDto{
+	// 	FirstMessage: api.String("Hi there, I see you're calling about ms. Johnson. How can I help you today?"),
+	// 	Model: &api.CreateAssistantDtoModel{
+	// 		OpenAiModel: &api.OpenAiModel{
+	// 			Model: "gpt-4o-mini",
+	// 			Messages: []*api.OpenAiMessage{
+	// 				{
+	// 					Role:    api.OpenAiMessageRoleSystem,
+	// 					Content: &systemPrompt,
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// 	Voice: &api.CreateAssistantDtoVoice{
+	// 		ElevenLabsVoice: &api.ElevenLabsVoice{
+	// 			VoiceId:         api.String("alloy"),
+	// 			Stability:       api.Float64(0.5),
+	// 			SimilarityBoost: api.Float64(0.5),
+	// 		},
+	// 	},
+	// 	ServerMessages: []api.CreateAssistantDtoServerMessagesItem{
+	// 		api.CreateAssistantDtoServerMessagesItem("function-call"),
+	// 		api.CreateAssistantDtoServerMessagesItem("end-of-call-report"),
+	// 	},
+	// 	EndCallPhrases: endCallPhrases,
+	// }
+
+	jsonResp := AssistantResponse{
+		Assistant: Assistant{
+			Voice: Voice{
+				VoiceID:                "3RMkGuPAdoghqmNaBi0l",
+				Provider:               "11labs",
+				Stability:              0.5,
+				SimilarityBoost:        0.75,
+				Model:                  "eleven_multilingual_v2",
+				FillerInjectionEnabled: false,
+			},
+			Model: Model{
+				Model:   "gpt-4o-mini",
+				ToolIDs: []string{},
+				Messages: []Message{
 					{
-						Role:    api.OpenAiMessageRoleSystem,
-						Content: &systemPrompt,
+						Role:    "system",
+						Content: fmt.Sprintf("you are a helpful assistant"),
 					},
 				},
+				Provider:                  "openai",
+				EmotionRecognitionEnabled: false,
+			},
+			RecordingEnabled:       true,
+			FirstMessage:           "firstMessage",
+			VoicemailMessage:       "voicemailMessage",
+			EndCallFunctionEnabled: true,
+			EndCallMessage:         "endCallMessage",
+			Transcriber: Transcriber{
+				Model:    "nova-2",
+				Language: "multi",
+				Provider: "deepgram",
+			},
+			ServerMessages: []string{
+				"end-of-call-report",
+				"function-call",
+			},
+			EndCallPhrases: []string{
+				"goodbye",
+				"talk to you soon",
+				"adios",
+				"bye",
+				"see you later",
+				"hasta luego",
+				"que tengas un buen dia",
+				"fin de la llamada",
+				"end of the call",
+			},
+			NumWordsToInterruptAssistant: 2,
+			BackgroundSound:              "office",
+			BackchannelingEnabled:        false,
+			BackgroundDenoisingEnabled:   false,
+			StartSpeakingPlan: StartSpeakingPlan{
+				SmartEndpointingEnabled: true,
 			},
 		},
-		Voice: &api.CreateAssistantDtoVoice{
-			ElevenLabsVoice: &api.ElevenLabsVoice{
-				VoiceId: &api.ElevenLabsVoiceId{
-					ElevenLabsVoiceIdEnum: api.ElevenLabsVoiceIdEnumDrew,
-				},
-				Stability:       api.Float64(0.5),
-				SimilarityBoost: api.Float64(0.5),
-			},
-		},
-		ServerMessages: []api.CreateAssistantDtoServerMessagesItem{
-			api.CreateAssistantDtoServerMessagesItem("function-call"),
-			api.CreateAssistantDtoServerMessagesItem("end-of-call-report"),
-		},
-		EndCallPhrases: endCallPhrases,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create assistant: %w", err)
 	}
 
-	log.Printf("Created assistant with ID: %s", assistant.Id)
-	return assistant, nil
+	log.Printf("Created assistant with ID")
+	return jsonResp, nil
 }
 
 // ListAssistants retrieves all available assistants

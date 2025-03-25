@@ -35,7 +35,6 @@ func main() {
 	queries := db.New(database)
 	userRepo := repository.NewUserRepository(queries)
 	callLogRepo := repository.NewCallLogRepository(queries)
-	tagRepo := repository.NewTagRepository(queries)
 
 	// Initialize Echo
 	e := echo.New()
@@ -47,13 +46,11 @@ func main() {
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userRepo)
-	callLogHandler := handlers.NewCallLogHandler(callLogRepo, tagRepo)
-	tagHandler := handlers.NewTagHandler(tagRepo)
+	callLogHandler := handlers.NewCallLogHandler(callLogRepo)
 
 	// Register routes
 	userHandler.RegisterRoutes(e)
 	callLogHandler.RegisterRoutes(e)
-	tagHandler.RegisterRoutes(e)
 
 	// Start server
 	go func() {

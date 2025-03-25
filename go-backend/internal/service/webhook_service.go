@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	api "github.com/VapiAI/server-sdk-go"
 	"github.com/epuerta/callguard/go-backend/internal/model"
 )
 
@@ -39,8 +38,10 @@ func (s *WebhookService) HandleWebhook(msg model.WebhookMessage) (interface{}, e
 		fmt.Println("Processing status-update webhook message")
 		err := s.handleStatusUpdate(msg)
 		if err != nil {
+			fmt.Println("Error processing status-update webhook message", err)
 			return nil, err
 		}
+		fmt.Println("Status-update webhook message processed successfully")
 		return "status-update", nil
 	default:
 		fmt.Println("Processing default webhook message")
@@ -49,18 +50,18 @@ func (s *WebhookService) HandleWebhook(msg model.WebhookMessage) (interface{}, e
 }
 
 // handleAssistantRequest processes assistant-request type messages
-func (s *WebhookService) handleAssistantRequest(msg model.WebhookMessage) (*api.Assistant, error) {
+func (s *WebhookService) handleAssistantRequest(msg model.WebhookMessage) (AssistantResponse, error) {
 	// Validate the call status
 	fmt.Println("Call status:", msg.Call.Status)
 	if msg.Call.Status != string(model.CallStatusRinging) {
-		return nil, errors.New("invalid call status for assistant request")
+		return AssistantResponse{}, errors.New("invalid call status for assistant request")
 	}
 
 	// Check if the caller number is spam
 	isSpam := CheckSpam(msg.Customer.Number)
 	if isSpam {
 		log.Printf("Spam detected for number %s", msg.Customer.Number)
-		return nil, errors.New("spam number detected")
+		return AssistantResponse{}, errors.New("spam number detected")
 	}
 
 	systemPrompt := `
@@ -185,10 +186,7 @@ Your main goal is to protect Ms. Johnson from potential scams or unwanted solici
 	// Create the assistant using VapiService
 	resp, err := s.vapiService.CreateAssistant(context.Background(), systemPrompt, endCallPhrases)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create assistant: %w", err)
-	}
-	if resp == nil {
-		return nil, errors.New("assistant creation failed")
+		return AssistantResponse{}, fmt.Errorf("failed to create assistant: %w", err)
 	}
 	return resp, nil
 

@@ -79,17 +79,7 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 			})
 		}
 
-		if response != nil {
-
-			return c.JSON(http.StatusOK, map[string]interface{}{
-				"status":   "webhook processed successfully",
-				"response": response,
-			})
-		}
-
-		return c.JSON(http.StatusOK, map[string]string{
-			"status": "webhook processed successfully",
-		})
+		return c.JSON(200, response)
 	})
 
 	// API routes

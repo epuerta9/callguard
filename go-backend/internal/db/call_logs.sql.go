@@ -12,68 +12,46 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const addTagToCallLog = `-- name: AddTagToCallLog :exec
-INSERT INTO call_logs_tags (call_log_id, tag_id)
-VALUES ($1, $2)
-ON CONFLICT DO NOTHING
-`
-
-type AddTagToCallLogParams struct {
-	CallLogID uuid.UUID `json:"call_log_id"`
-	TagID     uuid.UUID `json:"tag_id"`
-}
-
-func (q *Queries) AddTagToCallLog(ctx context.Context, arg AddTagToCallLogParams) error {
-	_, err := q.db.Exec(addTagToCallLog, arg.CallLogID, arg.TagID)
-	return err
-}
-
 const createCallLog = `-- name: CreateCallLog :one
 INSERT INTO call_logs (
-  user_id, caller_number, call_duration, recording_url, transcript, 
-  sentiment_score, risk_score, flagged, notes
+    user_id,
+    voice_assistant_id,
+    caller_number,
+    call_duration,
+    transcript,
+    is_potentially_malicious
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
-)
-RETURNING id, user_id, caller_number, call_duration, recording_url, transcript, sentiment_score, risk_score, flagged, notes, created_at, updated_at
+    $1, $2, $3, $4, $5, $6
+) RETURNING id, user_id, voice_assistant_id, caller_number, call_duration, transcript, is_potentially_malicious, created_at, updated_at
 `
 
 type CreateCallLogParams struct {
-	UserID         uuid.UUID     `json:"user_id"`
-	CallerNumber   string        `json:"caller_number"`
-	CallDuration   int32         `json:"call_duration"`
-	RecordingUrl   pgtype.Text   `json:"recording_url"`
-	Transcript     pgtype.Text   `json:"transcript"`
-	SentimentScore pgtype.Float8 `json:"sentiment_score"`
-	RiskScore      pgtype.Float8 `json:"risk_score"`
-	Flagged        bool          `json:"flagged"`
-	Notes          pgtype.Text   `json:"notes"`
+	UserID                 uuid.UUID   `json:"user_id"`
+	VoiceAssistantID       pgtype.UUID `json:"voice_assistant_id"`
+	CallerNumber           string      `json:"caller_number"`
+	CallDuration           int32       `json:"call_duration"`
+	Transcript             pgtype.Text `json:"transcript"`
+	IsPotentiallyMalicious bool        `json:"is_potentially_malicious"`
 }
 
 func (q *Queries) CreateCallLog(ctx context.Context, arg CreateCallLogParams) (CallLog, error) {
-	row := q.db.QueryRow(createCallLog,
+	row := q.db.QueryRow(ctx, createCallLog,
 		arg.UserID,
+		arg.VoiceAssistantID,
 		arg.CallerNumber,
 		arg.CallDuration,
-		arg.RecordingUrl,
 		arg.Transcript,
-		arg.SentimentScore,
-		arg.RiskScore,
-		arg.Flagged,
-		arg.Notes,
+		arg.IsPotentiallyMalicious,
 	)
 	var i CallLog
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.VoiceAssistantID,
 		&i.CallerNumber,
 		&i.CallDuration,
-		&i.RecordingUrl,
 		&i.Transcript,
-		&i.SentimentScore,
-		&i.RiskScore,
-		&i.Flagged,
-		&i.Notes,
+		&i.IsPotentiallyMalicious,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -86,64 +64,34 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteCallLog(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(deleteCallLog, id)
+	_, err := q.db.Exec(ctx, deleteCallLog, id)
 	return err
 }
 
 const getCallLogByID = `-- name: GetCallLogByID :one
-SELECT id, user_id, caller_number, call_duration, recording_url, transcript, sentiment_score, risk_score, flagged, notes, created_at, updated_at FROM call_logs 
+SELECT id, user_id, voice_assistant_id, caller_number, call_duration, transcript, is_potentially_malicious, created_at, updated_at FROM call_logs
 WHERE id = $1
 `
 
 func (q *Queries) GetCallLogByID(ctx context.Context, id uuid.UUID) (CallLog, error) {
-	row := q.db.QueryRow(getCallLogByID, id)
+	row := q.db.QueryRow(ctx, getCallLogByID, id)
 	var i CallLog
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.VoiceAssistantID,
 		&i.CallerNumber,
 		&i.CallDuration,
-		&i.RecordingUrl,
 		&i.Transcript,
-		&i.SentimentScore,
-		&i.RiskScore,
-		&i.Flagged,
-		&i.Notes,
+		&i.IsPotentiallyMalicious,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getTagsForCallLog = `-- name: GetTagsForCallLog :many
-SELECT t.id, t.name, t.created_at FROM tags t
-JOIN call_logs_tags clt ON t.id = clt.tag_id
-WHERE clt.call_log_id = $1
-ORDER BY t.name
-`
-
-func (q *Queries) GetTagsForCallLog(ctx context.Context, callLogID uuid.UUID) ([]Tag, error) {
-	rows, err := q.db.Query(getTagsForCallLog, callLogID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Tag{}
-	for rows.Next() {
-		var i Tag
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listCallLogs = `-- name: ListCallLogs :many
-SELECT id, user_id, caller_number, call_duration, recording_url, transcript, sentiment_score, risk_score, flagged, notes, created_at, updated_at FROM call_logs
+SELECT id, user_id, voice_assistant_id, caller_number, call_duration, transcript, is_potentially_malicious, created_at, updated_at FROM call_logs
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -154,7 +102,7 @@ type ListCallLogsParams struct {
 }
 
 func (q *Queries) ListCallLogs(ctx context.Context, arg ListCallLogsParams) ([]CallLog, error) {
-	rows, err := q.db.Query(listCallLogs, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listCallLogs, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -165,14 +113,11 @@ func (q *Queries) ListCallLogs(ctx context.Context, arg ListCallLogsParams) ([]C
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
+			&i.VoiceAssistantID,
 			&i.CallerNumber,
 			&i.CallDuration,
-			&i.RecordingUrl,
 			&i.Transcript,
-			&i.SentimentScore,
-			&i.RiskScore,
-			&i.Flagged,
-			&i.Notes,
+			&i.IsPotentiallyMalicious,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -187,7 +132,7 @@ func (q *Queries) ListCallLogs(ctx context.Context, arg ListCallLogsParams) ([]C
 }
 
 const listCallLogsByUserID = `-- name: ListCallLogsByUserID :many
-SELECT id, user_id, caller_number, call_duration, recording_url, transcript, sentiment_score, risk_score, flagged, notes, created_at, updated_at FROM call_logs
+SELECT id, user_id, voice_assistant_id, caller_number, call_duration, transcript, is_potentially_malicious, created_at, updated_at FROM call_logs
 WHERE user_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -200,7 +145,7 @@ type ListCallLogsByUserIDParams struct {
 }
 
 func (q *Queries) ListCallLogsByUserID(ctx context.Context, arg ListCallLogsByUserIDParams) ([]CallLog, error) {
-	rows, err := q.db.Query(listCallLogsByUserID, arg.UserID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listCallLogsByUserID, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -211,14 +156,11 @@ func (q *Queries) ListCallLogsByUserID(ctx context.Context, arg ListCallLogsByUs
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
+			&i.VoiceAssistantID,
 			&i.CallerNumber,
 			&i.CallDuration,
-			&i.RecordingUrl,
 			&i.Transcript,
-			&i.SentimentScore,
-			&i.RiskScore,
-			&i.Flagged,
-			&i.Notes,
+			&i.IsPotentiallyMalicious,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -232,71 +174,43 @@ func (q *Queries) ListCallLogsByUserID(ctx context.Context, arg ListCallLogsByUs
 	return items, nil
 }
 
-const removeTagFromCallLog = `-- name: RemoveTagFromCallLog :exec
-DELETE FROM call_logs_tags
-WHERE call_log_id = $1 AND tag_id = $2
-`
-
-type RemoveTagFromCallLogParams struct {
-	CallLogID uuid.UUID `json:"call_log_id"`
-	TagID     uuid.UUID `json:"tag_id"`
-}
-
-func (q *Queries) RemoveTagFromCallLog(ctx context.Context, arg RemoveTagFromCallLogParams) error {
-	_, err := q.db.Exec(removeTagFromCallLog, arg.CallLogID, arg.TagID)
-	return err
-}
-
 const updateCallLog = `-- name: UpdateCallLog :one
 UPDATE call_logs
-SET caller_number = $2,
+SET
+    caller_number = $2,
     call_duration = $3,
-    recording_url = $4,
-    transcript = $5,
-    sentiment_score = $6,
-    risk_score = $7,
-    flagged = $8,
-    notes = $9
+    transcript = $4,
+    is_potentially_malicious = $5,
+    updated_at = NOW()
 WHERE id = $1
-RETURNING id, user_id, caller_number, call_duration, recording_url, transcript, sentiment_score, risk_score, flagged, notes, created_at, updated_at
+RETURNING id, user_id, voice_assistant_id, caller_number, call_duration, transcript, is_potentially_malicious, created_at, updated_at
 `
 
 type UpdateCallLogParams struct {
-	ID             uuid.UUID     `json:"id"`
-	CallerNumber   string        `json:"caller_number"`
-	CallDuration   int32         `json:"call_duration"`
-	RecordingUrl   pgtype.Text   `json:"recording_url"`
-	Transcript     pgtype.Text   `json:"transcript"`
-	SentimentScore pgtype.Float8 `json:"sentiment_score"`
-	RiskScore      pgtype.Float8 `json:"risk_score"`
-	Flagged        bool          `json:"flagged"`
-	Notes          pgtype.Text   `json:"notes"`
+	ID                     uuid.UUID   `json:"id"`
+	CallerNumber           string      `json:"caller_number"`
+	CallDuration           int32       `json:"call_duration"`
+	Transcript             pgtype.Text `json:"transcript"`
+	IsPotentiallyMalicious bool        `json:"is_potentially_malicious"`
 }
 
 func (q *Queries) UpdateCallLog(ctx context.Context, arg UpdateCallLogParams) (CallLog, error) {
-	row := q.db.QueryRow(updateCallLog,
+	row := q.db.QueryRow(ctx, updateCallLog,
 		arg.ID,
 		arg.CallerNumber,
 		arg.CallDuration,
-		arg.RecordingUrl,
 		arg.Transcript,
-		arg.SentimentScore,
-		arg.RiskScore,
-		arg.Flagged,
-		arg.Notes,
+		arg.IsPotentiallyMalicious,
 	)
 	var i CallLog
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.VoiceAssistantID,
 		&i.CallerNumber,
 		&i.CallDuration,
-		&i.RecordingUrl,
 		&i.Transcript,
-		&i.SentimentScore,
-		&i.RiskScore,
-		&i.Flagged,
-		&i.Notes,
+		&i.IsPotentiallyMalicious,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
