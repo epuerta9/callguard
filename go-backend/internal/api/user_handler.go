@@ -174,6 +174,7 @@ func (h *userHandlerImpl) setCurrentMetadataField(c echo.Context) error {
 	}
 
 	field := c.Param("field")
+	fmt.Println("field", field)
 	if field == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Field name is required")
 	}

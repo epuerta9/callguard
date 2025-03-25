@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/epuerta/callguard/go-backend/internal/db"
 	"github.com/epuerta/callguard/go-backend/internal/model"
@@ -87,9 +88,10 @@ func (r *UserRepository) UpdateMetadata(ctx context.Context, userID string, meta
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("metadata", string(metadata))
 	user, err := r.db.UpdateUserMetadata(ctx, db.UpdateUserMetadataParams{
-		ID:       uuid,
-		Metadata: metadata,
+		ID:      uuid,
+		Column2: string(metadata),
 	})
 	if err != nil {
 		return nil, err
@@ -107,7 +109,7 @@ func (r *UserRepository) GetMetadata(ctx context.Context, userID string) (json.R
 	if err != nil {
 		return nil, err
 	}
-	return metadata, nil
+	return json.RawMessage(metadata), nil
 }
 
 // SetMetadataField sets a specific field in the user's metadata
@@ -119,7 +121,7 @@ func (r *UserRepository) SetMetadataField(ctx context.Context, userID string, fi
 	user, err := r.db.SetUserMetadataField(ctx, db.SetUserMetadataFieldParams{
 		ID:      uuid,
 		Column2: field,
-		Column3: value,
+		Column3: string(value),
 	})
 	if err != nil {
 		return nil, err
@@ -134,8 +136,8 @@ func (r *UserRepository) DeleteMetadataField(ctx context.Context, userID string,
 		return nil, err
 	}
 	user, err := r.db.DeleteUserMetadataField(ctx, db.DeleteUserMetadataFieldParams{
-		ID:       uuid,
-		Metadata: []byte(field),
+		ID:      uuid,
+		Column2: field,
 	})
 	if err != nil {
 		return nil, err
@@ -145,6 +147,10 @@ func (r *UserRepository) DeleteMetadataField(ctx context.Context, userID string,
 
 // convertDBUserToUser converts a db.User to a model.User
 func convertDBUserToUser(dbUser db.User) *model.User {
+	var metadata json.RawMessage
+	if dbUser.Metadata.Valid {
+		metadata = json.RawMessage(dbUser.Metadata.String)
+	}
 	return &model.User{
 		ID:           dbUser.ID.String(),
 		Name:         dbUser.Name,
@@ -152,6 +158,6 @@ func convertDBUserToUser(dbUser db.User) *model.User {
 		PasswordHash: dbUser.PasswordHash,
 		CreatedAt:    dbUser.CreatedAt.Time,
 		UpdatedAt:    dbUser.UpdatedAt.Time,
-		Metadata:     dbUser.Metadata,
+		Metadata:     metadata,
 	}
 }

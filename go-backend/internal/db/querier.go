@@ -21,7 +21,7 @@ type Querier interface {
 	GetCallLogByID(ctx context.Context, id uuid.UUID) (CallLog, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
-	GetUserMetadata(ctx context.Context, id uuid.UUID) ([]byte, error)
+	GetUserMetadata(ctx context.Context, id uuid.UUID) (string, error)
 	GetVoiceAssistantByID(ctx context.Context, id uuid.UUID) (VoiceAssistant, error)
 	ListCallLogs(ctx context.Context, arg ListCallLogsParams) ([]CallLog, error)
 	ListCallLogsByUserID(ctx context.Context, arg ListCallLogsByUserIDParams) ([]CallLog, error)
