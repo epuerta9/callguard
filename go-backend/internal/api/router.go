@@ -2,22 +2,35 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
+	vapiclient "github.com/VapiAI/server-sdk-go/client"
+	"github.com/VapiAI/server-sdk-go/option"
 	"github.com/epuerta/callguard/go-backend/internal/config"
 	"github.com/epuerta/callguard/go-backend/internal/model"
 	"github.com/epuerta/callguard/go-backend/internal/service"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 // NewRouter creates a new API router
 func NewRouter(cfg *config.Config, userService *service.UserService, callLogService *service.CallLogService) *echo.Echo {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: Error loading .env file: %v", err)
+	}
+
 	e := echo.New()
 
+	// Create Vapi client
+	vapiClient := vapiclient.NewClient(option.WithToken(os.Getenv("VAPI_API_KEY")))
+	vapiService := service.NewVapiService(vapiClient)
 	// Create webhook service
-	webhookService := service.NewWebhookService(callLogService)
+	webhookService := service.NewWebhookService(callLogService, vapiService)
 
 	// Middlewares
 	e.Use(middleware.Logger())
@@ -48,20 +61,29 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	e.POST("/", func(c echo.Context) error {
 		fmt.Println("Received webhook")
 
-		// Parse the request body into a WebhookPayload
 		var webhookPayload model.WebhookPayload
 		if err := c.Bind(&webhookPayload); err != nil {
+			fmt.Println("Failed to parse webhook message", err)
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": "Failed to parse webhook message",
 			})
 		}
 
-		fmt.Printf("Webhook type: %s\n", webhookPayload.Message.Type)
+		fmt.Printf("Received webhook message: %+v\n", webhookPayload.Message)
 
 		// Handle the webhook message based on its type
-		if err := webhookService.HandleWebhook(webhookPayload.Message); err != nil {
+		response, err := webhookService.HandleWebhook(webhookPayload.Message)
+		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": err.Error(),
+			})
+		}
+
+		if response != nil {
+
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"status":   "webhook processed successfully",
+				"response": response,
 			})
 		}
 
