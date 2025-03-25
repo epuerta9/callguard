@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Port             string
 	DatabaseURL      string
+	VapiAPIKey       string
 	JWTSecret        string
 	JWTExpiryHours   int
 	Environment      string
@@ -33,6 +34,7 @@ func Load() (*Config, error) {
 		Environment:      getEnv("ENVIRONMENT", "development"),
 		TranscriptAPIURL: getEnv("TRANSCRIPT_API_URL", ""),
 		SentimentAPIURL:  getEnv("SENTIMENT_API_URL", ""),
+		VapiAPIKey:       getEnv("VAPI_API_KEY", ""),
 	}
 
 	// Parse allowed origins

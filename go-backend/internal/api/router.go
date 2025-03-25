@@ -1,10 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/epuerta/callguard/go-backend/internal/config"
+	"github.com/epuerta/callguard/go-backend/internal/model"
 	"github.com/epuerta/callguard/go-backend/internal/service"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -13,6 +15,9 @@ import (
 // NewRouter creates a new API router
 func NewRouter(cfg *config.Config, userService *service.UserService, callLogService *service.CallLogService) *echo.Echo {
 	e := echo.New()
+
+	// Create webhook service
+	webhookService := service.NewWebhookService(callLogService)
 
 	// Middlewares
 	e.Use(middleware.Logger())
@@ -34,6 +39,35 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	// Health check
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
+	})
+
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
+	})
+
+	e.POST("/", func(c echo.Context) error {
+		fmt.Println("Received webhook")
+
+		// Parse the request body into a WebhookPayload
+		var webhookPayload model.WebhookPayload
+		if err := c.Bind(&webhookPayload); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Failed to parse webhook message",
+			})
+		}
+
+		fmt.Printf("Webhook type: %s\n", webhookPayload.Message.Type)
+
+		// Handle the webhook message based on its type
+		if err := webhookService.HandleWebhook(webhookPayload.Message); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{
+			"status": "webhook processed successfully",
+		})
 	})
 
 	// API routes
