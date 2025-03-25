@@ -35,7 +35,10 @@ func RunMigrations(cfg *config.Config) error {
 
 	// Run migrations
 	if err := goose.Up(db, migrationsDir); err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
+		// If the goose_db_version table already exists, we can ignore that error
+		if err.Error() != "ERROR: relation \"goose_db_version\" already exists (SQLSTATE 42P07)" {
+			return fmt.Errorf("failed to run migrations: %w", err)
+		}
 	}
 
 	return nil
