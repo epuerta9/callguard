@@ -143,6 +143,12 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	protected.GET("/users/me", userHandler(userService, queries).getCurrent)
 	protected.PUT("/users/me", userHandler(userService, queries).updateCurrent)
 
+	// User metadata routes
+	protected.GET("/users/me/metadata", userHandler(userService, queries).getCurrentMetadata)
+	protected.PUT("/users/me/metadata", userHandler(userService, queries).updateCurrentMetadata)
+	protected.PUT("/users/me/metadata/:field", userHandler(userService, queries).setCurrentMetadataField)
+	protected.DELETE("/users/me/metadata/:field", userHandler(userService, queries).deleteCurrentMetadataField)
+
 	// Call logs routes
 	protected.GET("/call-logs", callLogHandler(callLogService).list)
 	protected.POST("/call-logs", callLogHandler(callLogService).create)
