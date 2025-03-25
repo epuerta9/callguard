@@ -1,7 +1,7 @@
 import { toast } from "@/hooks/use-toast";
 import { useStore } from "@/context/store-context";
 
-const host = "https://api.octavio.co";
+const host = "http://localhost:8000";
 
 const headers = async () => {
   const result: { [key: string]: string } = {
@@ -13,8 +13,8 @@ const headers = async () => {
   if (userStr) {
     try {
       const user = JSON.parse(userStr);
-      if (user?.access_token) {
-        result["Authorization"] = `Bearer ${user.access_token}`;
+      if (user?.token) {
+        result["Authorization"] = `Bearer ${user.token}`;
       }
     } catch {
       // If parsing fails, continue without token
@@ -81,9 +81,9 @@ const useApi = () => {
         headers: {},
       };
 
-      if (user && user.access_token) {
+      if (user && user.token) {
         options.headers = {
-          Authorization: `Bearer ${user.access_token}`,
+          Authorization: `Bearer ${user.token}`,
         };
       }
 

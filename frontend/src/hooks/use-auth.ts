@@ -70,14 +70,14 @@ export function useAuth() {
   }, [])
 
   const validateToken = () => {
-    if (!user?.access_token) {
+    if (!user?.token) {
       logout()
       return false
     }
 
     // Check if token is expired by decoding JWT
     try {
-      const payload = JSON.parse(atob(user.access_token.split('.')[1]))
+      const payload = JSON.parse(atob(user?.token.split('.')[1]))
       if (payload.exp * 1000 < Date.now()) {
         logout()
         return false
