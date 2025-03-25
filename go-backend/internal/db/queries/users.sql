@@ -32,4 +32,32 @@ RETURNING *;
 
 -- name: DeleteUser :exec
 DELETE FROM users
-WHERE id = $1; 
+WHERE id = $1;
+
+-- name: UpdateUserMetadata :one
+UPDATE users
+SET metadata = COALESCE(metadata, '{}'::jsonb) || $2
+WHERE id = $1
+RETURNING *;
+
+-- name: GetUserMetadata :one
+SELECT metadata
+FROM users
+WHERE id = $1;
+
+-- name: SetUserMetadataField :one
+UPDATE users
+SET metadata = jsonb_set(
+    COALESCE(metadata, '{}'::jsonb),
+    ARRAY[$2],
+    $3::jsonb,
+    true
+)
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteUserMetadataField :one
+UPDATE users
+SET metadata = metadata - $2
+WHERE id = $1
+RETURNING *; 

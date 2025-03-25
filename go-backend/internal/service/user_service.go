@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"time"
@@ -118,4 +119,24 @@ func generateToken(userID string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// UpdateMetadata updates the user's metadata
+func (s *UserService) UpdateMetadata(ctx context.Context, userID string, metadata json.RawMessage) (*model.User, error) {
+	return s.repo.UpdateMetadata(ctx, userID, metadata)
+}
+
+// GetMetadata gets the user's metadata
+func (s *UserService) GetMetadata(ctx context.Context, userID string) (json.RawMessage, error) {
+	return s.repo.GetMetadata(ctx, userID)
+}
+
+// SetMetadataField sets a specific field in the user's metadata
+func (s *UserService) SetMetadataField(ctx context.Context, userID string, field string, value json.RawMessage) (*model.User, error) {
+	return s.repo.SetMetadataField(ctx, userID, field, value)
+}
+
+// DeleteMetadataField removes a field from the user's metadata
+func (s *UserService) DeleteMetadataField(ctx context.Context, userID string, field string) (*model.User, error) {
+	return s.repo.DeleteMetadataField(ctx, userID, field)
 }

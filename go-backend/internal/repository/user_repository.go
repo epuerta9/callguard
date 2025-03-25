@@ -2,122 +2,120 @@ package repository
 
 import (
 	"context"
-	"time"
+	"encoding/json"
 
 	"github.com/epuerta/callguard/go-backend/internal/db"
 	"github.com/epuerta/callguard/go-backend/internal/model"
-	"github.com/google/uuid"
 )
 
-// UserRepository provides access to the user data store
+// UserRepository handles database operations for users
 type UserRepository struct {
 	db *db.Queries
 }
 
 // NewUserRepository creates a new UserRepository
 func NewUserRepository(db *db.Queries) *UserRepository {
-	return &UserRepository{
-		db: db,
-	}
+	return &UserRepository{db: db}
 }
 
-// GetByID retrieves a user by their ID
+// GetByID gets a user by ID
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
-	// Convert id string to UUID
-	uuid, err := uuid.Parse(id)
+	user, err := r.db.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-
-	dbUser, err := r.db.GetUserByID(ctx, uuid)
-	if err != nil {
-		return nil, err
-	}
-
-	return convertDBUserToUser(dbUser), nil
+	return convertDBUserToUser(user), nil
 }
 
-// GetByEmail retrieves a user by their email
+// GetByEmail gets a user by email
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	dbUser, err := r.db.GetUserByEmail(ctx, email)
+	user, err := r.db.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-
-	return convertDBUserToUser(dbUser), nil
+	return convertDBUserToUser(user), nil
 }
 
 // Create creates a new user
-func (r *UserRepository) Create(ctx context.Context, req *model.RegisterRequest, passwordHash string) (*model.User, error) {
-	// Create user in database
-	dbUser, err := r.db.CreateUser(ctx, db.CreateUserParams{
-		Name:         req.Name,
-		Email:        req.Email,
+func (r *UserRepository) Create(ctx context.Context, params *model.RegisterRequest, passwordHash string) (*model.User, error) {
+	user, err := r.db.CreateUser(ctx, db.CreateUserParams{
+		Name:         params.Name,
+		Email:        params.Email,
 		PasswordHash: passwordHash,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	return convertDBUserToUser(dbUser), nil
+	return convertDBUserToUser(user), nil
 }
 
-// Update updates an existing user
-func (r *UserRepository) Update(ctx context.Context, id string, req *model.UpdateUserRequest, newPasswordHash string) (*model.User, error) {
-	userID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get existing user to preserve unchanged fields
-	existingUser, err := r.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update only provided fields
-	name := existingUser.Name
-	if req.Name != "" {
-		name = req.Name
-	}
-
-	passwordHash := existingUser.PasswordHash
-	if newPasswordHash != "" {
-		passwordHash = newPasswordHash
-	}
-
-	// Update user in database
-	dbUser, err := r.db.UpdateUser(ctx, db.UpdateUserParams{
-		ID:           userID,
-		Name:         name,
-		Email:        existingUser.Email,
+// Update updates a user
+func (r *UserRepository) Update(ctx context.Context, id string, params *model.UpdateUserRequest, passwordHash string) (*model.User, error) {
+	user, err := r.db.UpdateUser(ctx, db.UpdateUserParams{
+		ID:           id,
+		Name:         params.Name,
+		Email:        params.Email,
 		PasswordHash: passwordHash,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	return convertDBUserToUser(dbUser), nil
+	return convertDBUserToUser(user), nil
 }
 
 // Delete deletes a user
 func (r *UserRepository) Delete(ctx context.Context, id string) error {
-	userID, err := uuid.Parse(id)
-	if err != nil {
-		return err
-	}
+	return r.db.DeleteUser(ctx, id)
+}
 
-	return r.db.DeleteUser(ctx, userID)
+// UpdateMetadata updates the user's metadata
+func (r *UserRepository) UpdateMetadata(ctx context.Context, userID string, metadata json.RawMessage) (*model.User, error) {
+	user, err := r.db.UpdateUserMetadata(ctx, userID, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return convertDBUserToUser(user), nil
+}
+
+// GetMetadata gets the user's metadata
+func (r *UserRepository) GetMetadata(ctx context.Context, userID string) (json.RawMessage, error) {
+	return r.db.GetUserMetadata(ctx, userID)
+}
+
+// SetMetadataField sets a specific field in the user's metadata
+func (r *UserRepository) SetMetadataField(ctx context.Context, userID string, field string, value json.RawMessage) (*model.User, error) {
+	user, err := r.db.SetUserMetadataField(ctx, db.SetUserMetadataFieldParams{
+		ID:    userID,
+		Field: field,
+		Value: value,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return convertDBUserToUser(user), nil
+}
+
+// DeleteMetadataField removes a field from the user's metadata
+func (r *UserRepository) DeleteMetadataField(ctx context.Context, userID string, field string) (*model.User, error) {
+	user, err := r.db.DeleteUserMetadataField(ctx, db.DeleteUserMetadataFieldParams{
+		ID:    userID,
+		Field: field,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return convertDBUserToUser(user), nil
 }
 
 // convertDBUserToUser converts a db.User to a model.User
 func convertDBUserToUser(dbUser db.User) *model.User {
 	return &model.User{
-		ID:           dbUser.ID.String(),
+		ID:           dbUser.ID,
 		Name:         dbUser.Name,
 		Email:        dbUser.Email,
 		PasswordHash: dbUser.PasswordHash,
-		CreatedAt:    dbUser.CreatedAt.Time.Format(time.RFC3339),
-		UpdatedAt:    dbUser.UpdatedAt.Time.Format(time.RFC3339),
+		CreatedAt:    dbUser.CreatedAt.Time,
+		UpdatedAt:    dbUser.UpdatedAt.Time,
+		Metadata:     dbUser.Metadata,
 	}
 }

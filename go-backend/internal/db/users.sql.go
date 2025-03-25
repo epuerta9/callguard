@@ -18,7 +18,7 @@ INSERT INTO users (
     password_hash
 ) VALUES (
     $1, $2, $3
-) RETURNING id, name, email, password_hash, created_at, updated_at
+) RETURNING id, name, email, password_hash, created_at, updated_at, metadata
 `
 
 type CreateUserParams struct {
@@ -37,6 +37,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Metadata,
 	)
 	return i, err
 }
@@ -51,8 +52,35 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteUserMetadataField = `-- name: DeleteUserMetadataField :one
+UPDATE users
+SET metadata = metadata - $2
+WHERE id = $1
+RETURNING id, name, email, password_hash, created_at, updated_at, metadata
+`
+
+type DeleteUserMetadataFieldParams struct {
+	ID       uuid.UUID `json:"id"`
+	Metadata []byte    `json:"metadata"`
+}
+
+func (q *Queries) DeleteUserMetadataField(ctx context.Context, arg DeleteUserMetadataFieldParams) (User, error) {
+	row := q.db.QueryRow(ctx, deleteUserMetadataField, arg.ID, arg.Metadata)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, password_hash, created_at, updated_at FROM users
+SELECT id, name, email, password_hash, created_at, updated_at, metadata FROM users
 WHERE email = $1
 `
 
@@ -66,12 +94,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Metadata,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, email, password_hash, created_at, updated_at FROM users
+SELECT id, name, email, password_hash, created_at, updated_at, metadata FROM users
 WHERE id = $1
 `
 
@@ -85,12 +114,26 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Metadata,
 	)
 	return i, err
 }
 
+const getUserMetadata = `-- name: GetUserMetadata :one
+SELECT metadata
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserMetadata(ctx context.Context, id uuid.UUID) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getUserMetadata, id)
+	var metadata []byte
+	err := row.Scan(&metadata)
+	return metadata, err
+}
+
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, email, password_hash, created_at, updated_at FROM users
+SELECT id, name, email, password_hash, created_at, updated_at, metadata FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -116,6 +159,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.PasswordHash,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Metadata,
 		); err != nil {
 			return nil, err
 		}
@@ -127,6 +171,39 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
+const setUserMetadataField = `-- name: SetUserMetadataField :one
+UPDATE users
+SET metadata = jsonb_set(
+    COALESCE(metadata, '{}'::jsonb),
+    ARRAY[$2],
+    $3::jsonb,
+    true
+)
+WHERE id = $1
+RETURNING id, name, email, password_hash, created_at, updated_at, metadata
+`
+
+type SetUserMetadataFieldParams struct {
+	ID      uuid.UUID   `json:"id"`
+	Column2 interface{} `json:"column_2"`
+	Column3 []byte      `json:"column_3"`
+}
+
+func (q *Queries) SetUserMetadataField(ctx context.Context, arg SetUserMetadataFieldParams) (User, error) {
+	row := q.db.QueryRow(ctx, setUserMetadataField, arg.ID, arg.Column2, arg.Column3)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
@@ -135,7 +212,7 @@ SET
     password_hash = $4,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, name, email, password_hash, created_at, updated_at
+RETURNING id, name, email, password_hash, created_at, updated_at, metadata
 `
 
 type UpdateUserParams struct {
@@ -160,6 +237,34 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Metadata,
+	)
+	return i, err
+}
+
+const updateUserMetadata = `-- name: UpdateUserMetadata :one
+UPDATE users
+SET metadata = COALESCE(metadata, '{}'::jsonb) || $2
+WHERE id = $1
+RETURNING id, name, email, password_hash, created_at, updated_at, metadata
+`
+
+type UpdateUserMetadataParams struct {
+	ID       uuid.UUID `json:"id"`
+	Metadata []byte    `json:"metadata"`
+}
+
+func (q *Queries) UpdateUserMetadata(ctx context.Context, arg UpdateUserMetadataParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserMetadata, arg.ID, arg.Metadata)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Metadata,
 	)
 	return i, err
 }

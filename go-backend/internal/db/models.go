@@ -28,6 +28,7 @@ type User struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Metadata     []byte             `json:"metadata"`
 }
 
 type VoiceAssistant struct {

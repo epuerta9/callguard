@@ -55,6 +55,10 @@ func main() {
 	// Execute the command
 	switch command {
 	case "up":
+		// First ensure the goose_db_version table exists
+		if _, err := db.Exec("CREATE TABLE IF NOT EXISTS goose_db_version (version_id bigint NOT NULL, is_applied boolean NOT NULL, tstamp timestamp NULL DEFAULT now(), PRIMARY KEY (version_id));"); err != nil {
+			log.Printf("Warning: Could not create goose_db_version table: %v", err)
+		}
 		if err := goose.Up(db, migrationsDir); err != nil {
 			log.Fatalf("Failed to run migrations: %v", err)
 		}
