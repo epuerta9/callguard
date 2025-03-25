@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

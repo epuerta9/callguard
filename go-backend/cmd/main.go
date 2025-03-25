@@ -13,6 +13,7 @@ import (
 	"github.com/epuerta/callguard/go-backend/internal/config"
 	"github.com/epuerta/callguard/go-backend/internal/db"
 	"github.com/epuerta/callguard/go-backend/internal/repository"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
