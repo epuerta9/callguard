@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -28,12 +29,26 @@ type AuthResponse struct {
 
 type AuthHandler struct {
 	queries *db.Queries
+	jwtSecret []byte
 }
 
 func NewAuthHandler(queries *db.Queries) *AuthHandler {
-	return &AuthHandler{
-		queries: queries,
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	if len(jwtSecret) == 0 {
+		log.Fatal("JWT_SECRET environment variable is not set")
 	}
+
+	return &AuthHandler{
+		queries:   queries,
+		jwtSecret: jwtSecret,
+	}
+}
+
+// RegisterRoutes registers the auth routes
+func (h *AuthHandler) RegisterRoutes(e *echo.Echo) {
+	auth := e.Group("/auth")
+	auth.POST("/signup", h.Signup)
+	auth.POST("/login", h.Login)
 }
 
 func (h *AuthHandler) Signup(c echo.Context) error {
@@ -68,7 +83,7 @@ func (h *AuthHandler) Signup(c echo.Context) error {
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString(h.jwtSecret)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate token")
 	}
@@ -105,7 +120,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString(h.jwtSecret)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate token")
 	}

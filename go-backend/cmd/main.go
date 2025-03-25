@@ -46,10 +46,12 @@ func main() {
 	e.Use(middleware.CORS())
 
 	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(queries)
 	userHandler := handlers.NewUserHandler(userRepo)
 	callLogHandler := handlers.NewCallLogHandler(callLogRepo)
 
 	// Register routes
+	authHandler.RegisterRoutes(e)
 	userHandler.RegisterRoutes(e)
 	callLogHandler.RegisterRoutes(e)
 
