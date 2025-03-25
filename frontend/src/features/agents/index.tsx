@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   IconPlus,
   IconSearch,
@@ -9,9 +9,9 @@ import {
   IconAdjustmentsHorizontal,
   IconSortAscendingLetters,
   IconSortDescendingLetters,
-} from '@tabler/icons-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -20,65 +20,71 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { Header } from '@/components/layout/header'
-import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { ThemeSwitch } from '@/components/theme-switch'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { agents, type Agent } from './data/agents'
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Header } from "@/components/layout/header";
+import { Main } from "@/components/layout/main";
+import { ProfileDropdown } from "@/components/profile-dropdown";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { agents } from "./data/agents";
+import type { Agent } from "./types";
 
 const agentTypeText = new Map<string, string>([
-  ['all', 'All Agents'],
-  ['general', 'General'],
-  ['custom', 'Custom'],
-])
+  ["all", "All Agents"],
+  ["general", "General"],
+  ["custom", "Custom"],
+]);
 
 export default function Agents() {
-  const navigate = useNavigate()
-  const [sort, setSort] = useState('ascending')
-  const [agentType, setAgentType] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const navigate = useNavigate();
+  const [sort, setSort] = useState("ascending");
+  const [agentType, setAgentType] = useState("all");
+
+  const handleAgentClick = (id: string) => {
+    navigate({ to: "/agents/[id]" as const, params: { id } });
+  };
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newAgent, setNewAgent] = useState({
-    name: '',
-    phoneNumber: ''
-  })
+    name: "",
+    phoneNumber: "",
+  });
 
   const filteredAgents = [...agents]
     .sort((a: Agent, b: Agent) =>
-      sort === 'ascending'
+      sort === "ascending"
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name)
     )
     .filter((agent: Agent) =>
-      agentType === 'general'
-        ? agent.type === 'General'
-        : agentType === 'custom'
-          ? agent.type === 'Custom'
+      agentType === "general"
+        ? agent.type === "General"
+        : agentType === "custom"
+          ? agent.type === "Custom"
           : true
     )
-    .filter((agent: Agent) =>
-      agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agent.phoneNumber.includes(searchTerm)
-    )
+    .filter(
+      (agent: Agent) =>
+        agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agent.phoneNumber.includes(searchTerm)
+    );
 
   const handleCreateAgent = () => {
     // TODO: Implement agent creation
-    setIsCreateOpen(false)
-    setNewAgent({ name: '', phoneNumber: '' })
-  }
+    setIsCreateOpen(false);
+    setNewAgent({ name: "", phoneNumber: "" });
+  };
 
   return (
     <>
@@ -87,7 +93,7 @@ export default function Agents() {
           <h1 className="text-2xl font-bold">Agents</h1>
           <Badge variant="secondary">Dashboard / Agents</Badge>
         </div>
-        <div className='ml-auto flex items-center gap-4'>
+        <div className="ml-auto flex items-center gap-4">
           <ThemeSwitch />
           <ProfileDropdown />
         </div>
@@ -97,7 +103,9 @@ export default function Agents() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold">Your agents</h2>
-            <p className="text-muted-foreground">Click one of your agent to see its setting or analytics</p>
+            <p className="text-muted-foreground">
+              Click one of your agent to see its setting or analytics
+            </p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
@@ -113,17 +121,25 @@ export default function Agents() {
                   Add a new voice agent to handle your calls
                 </DialogDescription>
               </DialogHeader>
-              <form id="agent-form" onSubmit={(e) => {
-                e.preventDefault();
-                handleCreateAgent();
-              }}>
+              <form
+                id="agent-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCreateAgent();
+                }}
+              >
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
                       value={newAgent.name}
-                      onChange={(e) => setNewAgent(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setNewAgent((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
                       placeholder="Enter agent name"
                     />
                   </div>
@@ -132,14 +148,24 @@ export default function Agents() {
                     <Input
                       id="phone"
                       value={newAgent.phoneNumber}
-                      onChange={(e) => setNewAgent(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                      onChange={(e) =>
+                        setNewAgent((prev) => ({
+                          ...prev,
+                          phoneNumber: e.target.value,
+                        }))
+                      }
                       placeholder="(XXX) XXX-XXXX"
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                  <Button type='submit'>Save changes</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save changes</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -148,7 +174,10 @@ export default function Agents() {
 
         <div className="mb-6">
           <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <IconSearch
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              size={18}
+            />
             <Input
               placeholder="Search agents..."
               value={searchTerm}
@@ -163,7 +192,7 @@ export default function Agents() {
             <Card
               key={agent.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate({ to: `/agents/${agent.id}` })}
+              onClick={() => handleAgentClick(agent.id)}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3">
@@ -173,13 +202,18 @@ export default function Agents() {
                   </Avatar>
                   <div>
                     <h3 className="font-semibold">{agent.name}</h3>
-                    <p className="text-sm text-muted-foreground">{agent.phoneNumber}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {agent.phoneNumber}
+                    </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
-                  <Badge variant="secondary" className="flex items-center gap-1">
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
                     <IconUser size={14} />
                     {agent.type}
                   </Badge>
@@ -194,5 +228,5 @@ export default function Agents() {
         </div>
       </Main>
     </>
-  )
+  );
 }

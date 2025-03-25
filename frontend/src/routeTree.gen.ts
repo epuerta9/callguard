@@ -18,6 +18,7 @@ import { Route as AuthenticatedIndexImport } from './routes/_authenticated/index
 import { Route as authSignInImport } from './routes/(auth)/sign-in'
 import { Route as authOtpImport } from './routes/(auth)/otp'
 import { Route as auth500Import } from './routes/(auth)/500'
+import { Route as AuthenticatedAgentsidImport } from './routes/_authenticated/agents/[id]'
 
 // Create Virtual Routes
 
@@ -296,6 +297,14 @@ const AuthenticatedSettingsAccountLazyRoute =
     ),
   )
 
+const AuthenticatedAgentsidRoute = AuthenticatedAgentsidImport.update({
+  id: '/agents/[id]',
+  path: '/agents/[id]',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any).lazy(() =>
+  import('./routes/_authenticated/agents/[id].lazy').then((d) => d.Route),
+)
+
 const AuthenticatedSettingsBusinessLogoLazyRoute =
   AuthenticatedSettingsBusinessLogoLazyImport.update({
     id: '/business/logo',
@@ -440,6 +449,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/agents/[id]': {
+      id: '/_authenticated/agents/[id]'
+      path: '/agents/[id]'
+      fullPath: '/agents/[id]'
+      preLoaderRoute: typeof AuthenticatedAgentsidImport
       parentRoute: typeof AuthenticatedRouteImport
     }
     '/_authenticated/settings/account': {
@@ -593,6 +609,7 @@ const AuthenticatedSettingsRouteLazyRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteLazyRoute: typeof AuthenticatedSettingsRouteLazyRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAgentsidRoute: typeof AuthenticatedAgentsidRoute
   AuthenticatedAgentsIndexLazyRoute: typeof AuthenticatedAgentsIndexLazyRoute
   AuthenticatedAppsIndexLazyRoute: typeof AuthenticatedAppsIndexLazyRoute
   AuthenticatedChatsIndexLazyRoute: typeof AuthenticatedChatsIndexLazyRoute
@@ -605,6 +622,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteLazyRoute:
     AuthenticatedSettingsRouteLazyRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAgentsidRoute: AuthenticatedAgentsidRoute,
   AuthenticatedAgentsIndexLazyRoute: AuthenticatedAgentsIndexLazyRoute,
   AuthenticatedAppsIndexLazyRoute: AuthenticatedAppsIndexLazyRoute,
   AuthenticatedChatsIndexLazyRoute: AuthenticatedChatsIndexLazyRoute,
@@ -630,6 +648,7 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404LazyRoute
   '/503': typeof errors503LazyRoute
   '/': typeof AuthenticatedIndexRoute
+  '/agents/[id]': typeof AuthenticatedAgentsidRoute
   '/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayLazyRoute
@@ -659,6 +678,7 @@ export interface FileRoutesByTo {
   '/404': typeof errors404LazyRoute
   '/503': typeof errors503LazyRoute
   '/': typeof AuthenticatedIndexRoute
+  '/agents/[id]': typeof AuthenticatedAgentsidRoute
   '/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayLazyRoute
@@ -692,6 +712,7 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500LazyRoute
   '/(errors)/503': typeof errors503LazyRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/agents/[id]': typeof AuthenticatedAgentsidRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
   '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayLazyRoute
@@ -725,6 +746,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/503'
     | '/'
+    | '/agents/[id]'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
@@ -753,6 +775,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/503'
     | '/'
+    | '/agents/[id]'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
@@ -784,6 +807,7 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/'
+    | '/_authenticated/agents/[id]'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/display'
@@ -861,6 +885,7 @@ export const routeTree = rootRoute
       "children": [
         "/_authenticated/settings",
         "/_authenticated/",
+        "/_authenticated/agents/[id]",
         "/_authenticated/agents/",
         "/_authenticated/apps/",
         "/_authenticated/chats/",
@@ -919,6 +944,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/": {
       "filePath": "_authenticated/index.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/agents/[id]": {
+      "filePath": "_authenticated/agents/[id].tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/settings/account": {
