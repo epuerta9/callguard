@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -70,7 +71,23 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 		}
 
 		fmt.Printf("Received webhook message: %+v\n", webhookPayload.Message)
-
+		if webhookPayload.Message.Type == "transfer-destination-request" {
+			fmt.Println("Received transfer-destination-request webhook message")
+			var forwardPayload service.VAPIForwardPayload
+			if err := c.Bind(&forwardPayload); err != nil {
+				fmt.Println("Failed to parse webhook message", err)
+				return c.JSON(http.StatusBadRequest, map[string]string{
+					"error": "Failed to parse webhook message",
+				})
+			}
+			response, err := webhookService.HandleForwardWebhook(context.Background(), forwardPayload)
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, map[string]string{
+					"error": err.Error(),
+				})
+			}
+			return c.JSON(200, response)
+		}
 		// Handle the webhook message based on its type
 		response, err := webhookService.HandleWebhook(webhookPayload.Message)
 		if err != nil {

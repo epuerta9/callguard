@@ -62,7 +62,7 @@ func (s *VapiService) CreateAssistant(ctx context.Context, systemPrompt string, 
 			},
 			Model: Model{
 				Model:   "gpt-4o-mini",
-				ToolIDs: []string{},
+				ToolIDs: []string{"e2a4fd36-4b4d-4152-9b31-588372bc626c"},
 				Messages: []Message{
 					{
 						Role:    "system",
@@ -83,6 +83,7 @@ func (s *VapiService) CreateAssistant(ctx context.Context, systemPrompt string, 
 				Provider: "deepgram",
 			},
 			ServerMessages: []string{
+				"transfer-destination-request",
 				"end-of-call-report",
 				"function-call",
 			},
