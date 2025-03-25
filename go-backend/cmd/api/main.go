@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -58,7 +57,7 @@ func main() {
 	// Start the server in a goroutine
 	go func() {
 		slog.Info("Starting server", "port", cfg.Port)
-		if err := e.Start(fmt.Sprintf(":%d", cfg.Port)); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(":8000"); err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed", "error", err)
 			os.Exit(1)
 		}
