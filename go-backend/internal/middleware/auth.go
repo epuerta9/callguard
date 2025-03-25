@@ -31,6 +31,7 @@ func AuthEcho(c echo.Context, next echo.HandlerFunc) error {
 
 	// Extract the token
 	token := strings.TrimPrefix(authHeader, "Bearer ")
+	fmt.Println("token", token)
 	if token == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Token required")
 	}
@@ -41,6 +42,8 @@ func AuthEcho(c echo.Context, next echo.HandlerFunc) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Invalid token: %v", err))
 	}
+
+	fmt.Println("user", user)
 
 	// Add the user to the request context
 	c.Set(string(ContextUserKey), user)
@@ -105,7 +108,7 @@ func validateToken(token string) (*model.User, error) {
 	// For demonstration purposes, we'll return a dummy user
 	// In a real application, you would query the database with the user ID from the token
 	return &model.User{
-		ID:    "00000000-0000-0000-0000-000000000000", // Placeholder UUID
+		ID:    "2063b131-a0d0-4f02-b004-6293b7b8e6e8", // Placeholder UUID
 		Name:  "Test User",
 		Email: "test@example.com",
 	}, nil

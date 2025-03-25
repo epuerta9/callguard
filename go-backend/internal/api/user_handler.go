@@ -140,7 +140,8 @@ func (h *userHandlerImpl) updateCurrentMetadata(c echo.Context) error {
 	if err := c.Bind(&metadata); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid metadata format")
 	}
-
+	fmt.Println("metadata", string(metadata))
+	fmt.Println("user.ID", user.ID)
 	updatedUser, err := h.service.UpdateMetadata(c.Request().Context(), user.ID, metadata)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
