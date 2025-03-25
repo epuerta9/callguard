@@ -13,8 +13,8 @@ const headers = async () => {
   if (userStr) {
     try {
       const user = JSON.parse(userStr);
-      if (user?.access_token) {
-        result["Authorization"] = `Bearer ${user.access_token}`;
+      if (user?.token) {
+        result["Authorization"] = `Bearer ${user.token}`;
       }
     } catch {
       // If parsing fails, continue without token
@@ -81,9 +81,9 @@ const useApi = () => {
         headers: {},
       };
 
-      if (user && user.access_token) {
+      if (user && user.token) {
         options.headers = {
-          Authorization: `Bearer ${user.access_token}`,
+          Authorization: `Bearer ${user.token}`,
         };
       }
 

@@ -38,7 +38,7 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	webhookService := service.NewWebhookService(callLogService, vapiService)
 
 	// Create user handler
-	uh := userHandler(userService)
+	uh := userHandler(userService, queries)
 
 	// Middlewares
 	e.Use(middleware.Logger())
@@ -58,10 +58,10 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	}))
 
 	// Auth routes
-	e.POST("/auth/signup", uh.register)
-	e.POST("/auth/login", uh.login)
-	e.GET("/auth/me", uh.getCurrent)
-	e.PUT("/auth/me", uh.updateCurrent)
+	e.POST("/signup", uh.Signup)
+	e.POST("/login", uh.login)
+	e.GET("/me", uh.getCurrent)
+	e.PUT("/me", uh.updateCurrent)
 
 	// Health check
 	e.GET("/health", func(c echo.Context) error {
@@ -132,16 +132,16 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	api := e.Group("/api/v1")
 
 	// Public routes
-	api.POST("/users/register", userHandler(userService).register)
-	api.POST("/users/login", userHandler(userService).login)
+	api.POST("/users/register", userHandler(userService, queries).register)
+	api.POST("/users/login", userHandler(userService, queries).login)
 
 	// Protected routes
 	protected := api.Group("")
 	protected.Use(authMiddleware)
 
 	// User routes
-	protected.GET("/users/me", userHandler(userService).getCurrent)
-	protected.PUT("/users/me", userHandler(userService).updateCurrent)
+	protected.GET("/users/me", userHandler(userService, queries).getCurrent)
+	protected.PUT("/users/me", userHandler(userService, queries).updateCurrent)
 
 	// Call logs routes
 	protected.GET("/call-logs", callLogHandler(callLogService).list)
