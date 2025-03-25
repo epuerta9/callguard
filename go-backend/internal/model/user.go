@@ -1,13 +1,19 @@
 package model
 
+import (
+	"encoding/json"
+	"time"
+)
+
 // User represents a user in the system
 type User struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"-"` // Never expose in JSON
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Email        string          `json:"email"`
+	PasswordHash string          `json:"-"` // Never expose in JSON
+	CreatedAt    time.Time       `json:"created_at"`
+	UpdatedAt    time.Time       `json:"updated_at"`
+	Metadata     json.RawMessage `json:"metadata,omitempty"`
 }
 
 // LoginRequest represents a login request

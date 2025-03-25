@@ -6,6 +6,7 @@ import (
 
 	"github.com/epuerta/callguard/go-backend/internal/db"
 	"github.com/epuerta/callguard/go-backend/internal/model"
+	"github.com/google/uuid"
 )
 
 // UserRepository handles database operations for users
@@ -20,7 +21,11 @@ func NewUserRepository(db *db.Queries) *UserRepository {
 
 // GetByID gets a user by ID
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
-	user, err := r.db.GetUserByID(ctx, id)
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+	user, err := r.db.GetUserByID(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +56,12 @@ func (r *UserRepository) Create(ctx context.Context, params *model.RegisterReque
 
 // Update updates a user
 func (r *UserRepository) Update(ctx context.Context, id string, params *model.UpdateUserRequest, passwordHash string) (*model.User, error) {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
 	user, err := r.db.UpdateUser(ctx, db.UpdateUserParams{
-		ID:           id,
+		ID:           uuid,
 		Name:         params.Name,
 		Email:        params.Email,
 		PasswordHash: passwordHash,
@@ -65,12 +74,23 @@ func (r *UserRepository) Update(ctx context.Context, id string, params *model.Up
 
 // Delete deletes a user
 func (r *UserRepository) Delete(ctx context.Context, id string) error {
-	return r.db.DeleteUser(ctx, id)
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+	return r.db.DeleteUser(ctx, uuid)
 }
 
 // UpdateMetadata updates the user's metadata
 func (r *UserRepository) UpdateMetadata(ctx context.Context, userID string, metadata json.RawMessage) (*model.User, error) {
-	user, err := r.db.UpdateUserMetadata(ctx, userID, metadata)
+	uuid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+	user, err := r.db.UpdateUserMetadata(ctx, db.UpdateUserMetadataParams{
+		ID:       uuid,
+		Metadata: metadata,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -79,15 +99,27 @@ func (r *UserRepository) UpdateMetadata(ctx context.Context, userID string, meta
 
 // GetMetadata gets the user's metadata
 func (r *UserRepository) GetMetadata(ctx context.Context, userID string) (json.RawMessage, error) {
-	return r.db.GetUserMetadata(ctx, userID)
+	uuid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+	metadata, err := r.db.GetUserMetadata(ctx, uuid)
+	if err != nil {
+		return nil, err
+	}
+	return metadata, nil
 }
 
 // SetMetadataField sets a specific field in the user's metadata
 func (r *UserRepository) SetMetadataField(ctx context.Context, userID string, field string, value json.RawMessage) (*model.User, error) {
+	uuid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
 	user, err := r.db.SetUserMetadataField(ctx, db.SetUserMetadataFieldParams{
-		ID:    userID,
-		Field: field,
-		Value: value,
+		ID:      uuid,
+		Column2: field,
+		Column3: value,
 	})
 	if err != nil {
 		return nil, err
@@ -97,9 +129,13 @@ func (r *UserRepository) SetMetadataField(ctx context.Context, userID string, fi
 
 // DeleteMetadataField removes a field from the user's metadata
 func (r *UserRepository) DeleteMetadataField(ctx context.Context, userID string, field string) (*model.User, error) {
+	uuid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
 	user, err := r.db.DeleteUserMetadataField(ctx, db.DeleteUserMetadataFieldParams{
-		ID:    userID,
-		Field: field,
+		ID:       uuid,
+		Metadata: []byte(field),
 	})
 	if err != nil {
 		return nil, err
@@ -110,7 +146,7 @@ func (r *UserRepository) DeleteMetadataField(ctx context.Context, userID string,
 // convertDBUserToUser converts a db.User to a model.User
 func convertDBUserToUser(dbUser db.User) *model.User {
 	return &model.User{
-		ID:           dbUser.ID,
+		ID:           dbUser.ID.String(),
 		Name:         dbUser.Name,
 		Email:        dbUser.Email,
 		PasswordHash: dbUser.PasswordHash,
