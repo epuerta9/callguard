@@ -8,5 +8,8 @@
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm run start",
     "lint": "cd frontend && npm run lint"
+  },
+  "dependencies": {
+    "sonner": "^2.0.1"
   }
 }

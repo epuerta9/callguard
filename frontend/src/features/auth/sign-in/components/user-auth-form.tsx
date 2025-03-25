@@ -60,6 +60,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
     const { email, password } = data;
+    console.log(email, password); 
 
     try {
       const response = await Api.post("/login", { email, password });
@@ -74,8 +75,8 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
             variant: "destructive",
           });
         } else {
-          const { access_token, user_id, account_id } = responseData;
-          const userData = { access_token, user_id, account_id };
+          const { token, user_id, account_id } = responseData;
+          const userData = { token, user_id, account_id };
           localStorage.setItem("user", JSON.stringify(userData));
           setUser(userData); // Update auth context
 

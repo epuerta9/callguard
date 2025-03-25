@@ -23,6 +23,8 @@ interface AgentDetailsProps {
 export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
   const [isTestCallActive, setIsTestCallActive] = useState(false);
   const [testPhoneNumber, setTestPhoneNumber] = useState("");
+  const [formData, setFormData] = useState(agent);
+  const [isDirty, setIsDirty] = useState(false);
 
   const handleTestCall = () => {
     setIsTestCallActive(true);
@@ -32,8 +34,19 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
     }, 10000); // 10 seconds timeout for demo
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdate(formData);
+    setIsDirty(false);
+  };
+
+  const handleChange = (field: keyof Agent, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Test Agent Card */}
       <Card className="p-6">
         <div className="flex items-center justify-between">
@@ -51,6 +64,7 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
               className="w-40"
             />
             <Button
+              type="button"
               variant="secondary"
               onClick={handleTestCall}
               disabled={isTestCallActive}
@@ -73,7 +87,10 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label>Voice</Label>
-              <Select defaultValue="chris">
+              <Select 
+                value={formData.voice?.name || "chris"}
+                onValueChange={(value) => handleChange('voice', { ...formData.voice, name: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a voice" />
                 </SelectTrigger>
@@ -87,7 +104,10 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
 
             <div className="grid gap-2">
               <Label>Language</Label>
-              <Select defaultValue="en-US">
+              <Select 
+                value={formData.voice?.language || "en-US"}
+                onValueChange={(value) => handleChange('voice', { ...formData.voice, language: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a language" />
                 </SelectTrigger>
@@ -100,7 +120,7 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
 
             <div className="grid gap-2">
               <Label>Advanced Voice Settings</Label>
-              <Button variant="outline">Configure</Button>
+              <Button type="button" variant="outline">Configure</Button>
             </div>
           </div>
         </TabsContent>
@@ -111,10 +131,8 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
               <Label>Greeting</Label>
               <Input
                 placeholder="Hello from {Company Name}"
-                defaultValue={agent.greeting}
-                onChange={(e) =>
-                  onUpdate({ ...agent, greeting: e.target.value })
-                }
+                value={formData.greeting}
+                onChange={(e) => handleChange('greeting', e.target.value)}
               />
             </div>
 
@@ -123,10 +141,8 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
               <Textarea
                 placeholder="Write instructions for your agent..."
                 className="min-h-[150px]"
-                defaultValue={agent.instructions}
-                onChange={(e) =>
-                  onUpdate({ ...agent, instructions: e.target.value })
-                }
+                value={formData.instructions}
+                onChange={(e) => handleChange('instructions', e.target.value)}
               />
             </div>
           </div>
@@ -136,6 +152,12 @@ export function AgentDetails({ agent, onUpdate }: AgentDetailsProps) {
           <AgentActivity agent={agent} />
         </TabsContent>
       </Tabs>
-    </div>
+
+      <div className="flex justify-end">
+        <Button type="submit" disabled={!isDirty}>
+          Save changes
+        </Button>
+      </div>
+    </form>
   );
 }

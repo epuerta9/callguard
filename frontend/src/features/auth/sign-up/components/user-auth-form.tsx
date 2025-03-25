@@ -59,7 +59,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/signup", values);
+      const response = await api.post("/signup", values);
       
       if (!response) {
         throw new Error("No response from server");

@@ -1,14 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   IconPlus,
   IconSearch,
   IconUser,
-  IconPhone,
-  IconSettings,
-  IconAdjustmentsHorizontal,
-  IconSortAscendingLetters,
-  IconSortDescendingLetters,
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,43 +17,58 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { agents } from "./data/agents";
-import type { Agent } from "./types";
-
-const agentTypeText = new Map<string, string>([
-  ["all", "All Agents"],
-  ["general", "General"],
-  ["custom", "Custom"],
-]);
+import { Card, CardHeader } from "@/components/ui/card";
+import { userMetadataApi, type Agent } from "@/lib/api/user-metadata";
+import { toast } from "sonner";
 
 export default function Agents() {
   const navigate = useNavigate();
-  const [sort, setSort] = useState("ascending");
-  const [agentType, setAgentType] = useState("all");
+  const [sort] = useState("ascending");
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadAgents();
+  }, []);
+
+  const loadAgents = async () => {
+    try {
+      const metadata = await userMetadataApi.get();
+      const agentsList = Object.entries(metadata.agents || {}).map(([id, agent]) => ({
+        id,
+        ...(agent as Omit<Agent, 'id'>)
+      }));
+      setAgents(agentsList);
+    } catch (_error) {
+      toast.error("Failed to load agents");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAgentClick = (id: string) => {
     navigate({ to: "/agents/[id]" as const, params: { id } });
   };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newAgent, setNewAgent] = useState({
+  const [newAgent, setNewAgent] = useState<Omit<Agent, 'id'>>({
     name: "",
-    phoneNumber: "",
+    description: "",
+    model: "gpt-4",
+    systemPrompt: "",
+    temperature: 0.7,
+    maxTokens: 1000,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    stopSequences: []
   });
 
   const filteredAgents = [...agents]
@@ -67,23 +77,36 @@ export default function Agents() {
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name)
     )
-    .filter((agent: Agent) =>
-      agentType === "general"
-        ? agent.type === "General"
-        : agentType === "custom"
-          ? agent.type === "Custom"
-          : true
-    )
     .filter(
       (agent: Agent) =>
-        agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        agent.phoneNumber.includes(searchTerm)
+        agent.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-  const handleCreateAgent = () => {
-    // TODO: Implement agent creation
-    setIsCreateOpen(false);
-    setNewAgent({ name: "", phoneNumber: "" });
+  const handleCreateAgent = async () => {
+    try {
+      await userMetadataApi.update({
+        agents: {
+          [crypto.randomUUID()]: newAgent
+        }
+      });
+      await loadAgents();
+      setIsCreateOpen(false);
+      setNewAgent({
+        name: "",
+        description: "",
+        model: "gpt-4",
+        systemPrompt: "",
+        temperature: 0.7,
+        maxTokens: 1000,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        stopSequences: []
+      });
+      toast.success("Agent created successfully");
+    } catch (_error) {
+      toast.error("Failed to create agent");
+    }
   };
 
   return (
@@ -141,25 +164,43 @@ export default function Agents() {
                         }))
                       }
                       placeholder="Enter agent name"
+                      required
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="description">Description</Label>
                     <Input
-                      id="phone"
-                      value={newAgent.phoneNumber}
+                      id="description"
+                      value={newAgent.description}
                       onChange={(e) =>
                         setNewAgent((prev) => ({
                           ...prev,
-                          phoneNumber: e.target.value,
+                          description: e.target.value,
                         }))
                       }
-                      placeholder="(XXX) XXX-XXXX"
+                      placeholder="Enter agent description"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="systemPrompt">System Prompt</Label>
+                    <Input
+                      id="systemPrompt"
+                      value={newAgent.systemPrompt}
+                      onChange={(e) =>
+                        setNewAgent((prev) => ({
+                          ...prev,
+                          systemPrompt: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter system prompt"
+                      required
                     />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button
+                    type="button"
                     variant="outline"
                     onClick={() => setIsCreateOpen(false)}
                   >
@@ -187,45 +228,35 @@ export default function Agents() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAgents.map((agent) => (
-            <Card
-              key={agent.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleAgentClick(agent.id)}
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={agent.avatar} />
-                    <AvatarFallback>{agent.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold">{agent.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {agent.phoneNumber}
-                    </p>
+        {isLoading ? (
+          <div className="text-center py-8">Loading agents...</div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredAgents.map((agent) => (
+              <Card
+                key={agent.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleAgentClick(agent.id)}
+              >
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarFallback>
+                        <IconUser size={24} />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">{agent.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {agent.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1"
-                  >
-                    <IconUser size={14} />
-                    {agent.type}
-                  </Badge>
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <IconPhone size={14} />
-                    {agent.status}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        )}
       </Main>
     </>
   );
