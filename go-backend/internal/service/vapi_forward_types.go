@@ -1,42 +1,21 @@
 package service
 
+import "github.com/epuerta/callguard/go-backend/internal/model"
+
+// MinimalWebhookPayload represents the minimal structure needed to identify the webhook type
+type MinimalWebhookPayload struct {
+	Type string `json:"type"`
+}
+
 // VAPIForwardPayload represents the incoming webhook payload
 type VAPIForwardPayload struct {
-	Type        string           `json:"type"`
-	Artifact    ForwardArtifact  `json:"artifact"`
-	Assistant   ForwardAssistant `json:"assistant"`
-	PhoneNumber string           `json:"phoneNumber"`
-	Customer    ForwardCustomer  `json:"customer"`
-	Call        ForwardCall      `json:"call"`
-}
-
-// ForwardArtifact contains the conversation data
-type ForwardArtifact struct {
-	Messages                []ForwardMessage `json:"messages"`
-	Transcript              string           `json:"transcript"`
-	MessagesOpenAIFormatted []ForwardMessage `json:"messagesOpenAIFormatted"`
-}
-
-// ForwardMessage represents a single message in the conversation
-type ForwardMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// ForwardAssistant represents the assistant information
-type ForwardAssistant struct {
-	ID string `json:"id"`
-}
-
-// ForwardCustomer represents the customer information
-type ForwardCustomer struct {
-	ID string `json:"id"`
-}
-
-// ForwardCall represents the call information
-type ForwardCall struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	Timestamp   int64              `json:"timestamp"`
+	Type        string             `json:"type"`
+	Call        model.Call         `json:"call"`
+	Customer    model.Customer     `json:"customer"`
+	Status      string             `json:"status,omitempty"`
+	EndedReason string             `json:"endedReason,omitempty"`
+	PhoneNumber *model.PhoneNumber `json:"phoneNumber,omitempty"`
 }
 
 // VAPIForwardResponse represents the response payload
@@ -46,10 +25,10 @@ type VAPIForwardResponse struct {
 
 // ForwardDestination represents the destination configuration
 type ForwardDestination struct {
-	Type                   string `json:"type"`
-	Message                string `json:"message"`
-	Number                 string `json:"number"`
-	NumberE164CheckEnabled bool   `json:"numberE164CheckEnabled"`
-	CallerID               string `json:"callerId"`
-	Extension              string `json:"extension"`
+	Type                   string  `json:"type"`
+	Message                string  `json:"message"`
+	Number                 string  `json:"number"`
+	NumberE164CheckEnabled bool    `json:"numberE164CheckEnabled"`
+	CallerID               *string `json:"callerId,omitempty"`
+	Extension              *string `json:"extension,omitempty"`
 }

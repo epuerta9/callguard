@@ -1,8 +1,11 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -62,9 +65,22 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	e.POST("/", func(c echo.Context) error {
 		fmt.Println("Received webhook")
 
+		// Read the body once at the beginning
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			fmt.Println("Failed to read request body:", err)
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Failed to read request body",
+			})
+		}
+		// Restore the body for subsequent reads
+		c.Request().Body = io.NopCloser(bytes.NewBuffer(body))
+
+		// First try to bind to webhookPayload
 		var webhookPayload model.WebhookPayload
-		if err := c.Bind(&webhookPayload); err != nil {
-			fmt.Println("Failed to parse webhook message", err)
+		if err := json.Unmarshal(body, &webhookPayload); err != nil {
+			fmt.Printf("Request body: %s\n", string(body))
+			fmt.Println("Failed to parse webhook in router", err)
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": "Failed to parse webhook message",
 			})
@@ -73,13 +89,16 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 		fmt.Printf("Received webhook message: %+v\n", webhookPayload.Message)
 		if webhookPayload.Message.Type == "transfer-destination-request" {
 			fmt.Println("Received transfer-destination-request webhook message")
+			fmt.Printf("Transfer destination request payload: %s\n", string(body))
+
 			var forwardPayload service.VAPIForwardPayload
-			if err := c.Bind(&forwardPayload); err != nil {
-				fmt.Println("Failed to parse webhook message", err)
+			if err := json.Unmarshal(body, &forwardPayload); err != nil {
+				fmt.Println("Failed to parse forward payload:", err)
 				return c.JSON(http.StatusBadRequest, map[string]string{
-					"error": "Failed to parse webhook message",
+					"error": "Failed to parse forward payload",
 				})
 			}
+			fmt.Printf("Forward payload: %+v\n", forwardPayload)
 			response, err := webhookService.HandleForwardWebhook(context.Background(), forwardPayload)
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, map[string]string{

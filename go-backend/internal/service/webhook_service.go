@@ -116,6 +116,8 @@ If the caller appears genuine and you can forward them to Ms. Johnson:
 1. **Offer to connect**: “Thank you for letting me know. One moment while I see if Ms. Johnson is available.”
 2. **Confirm**: “Thank you for your patience. Please hold, and I’ll connect you now. Have a nice day.”
 
+if the user says the keyphrase "transfer to ms. johnson"
+then proceed to transfer the call
 [TASK]
 trigger the dynamicDestinationTransferCall tool
 
