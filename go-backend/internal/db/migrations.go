@@ -24,14 +24,15 @@ func RunMigrations(cfg *config.Config) error {
 	defer db.Close()
 
 	// Get the absolute path to the migrations directory
-	migrationsDir := "internal/db/migrations"
-	if !filepath.IsAbs(migrationsDir) {
-		wd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get working directory: %w", err)
-		}
-		migrationsDir = filepath.Join(wd, migrationsDir)
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
 	}
+	// If we're running from cmd/api, we need to go up two levels
+	if filepath.Base(wd) == "api" && filepath.Base(filepath.Dir(wd)) == "cmd" {
+		wd = filepath.Dir(filepath.Dir(wd))
+	}
+	migrationsDir := filepath.Join(wd, "internal", "db", "migrations")
 
 	// Run migrations
 	if err := goose.Up(db, migrationsDir); err != nil {
