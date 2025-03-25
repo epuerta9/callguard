@@ -1,0 +1,27 @@
+# Environment variables
+.env
+.env.local
+
+# Binary files
+bin/
+/go-backend
+
+# Generated code
+*_gen.go
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dependency directories
+vendor/
+
+# Test coverage reports
+coverage.*
+
+# OS specific files
+.DS_Store
+Thumbs.db 
