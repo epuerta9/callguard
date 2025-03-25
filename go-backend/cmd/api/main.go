@@ -52,7 +52,7 @@ func main() {
 	callLogService := service.NewCallLogService(callLogRepo)
 
 	// Initialize the API server
-	e := api.NewRouter(cfg, userService, callLogService)
+	e := api.NewRouter(cfg, userService, callLogService, queries)
 
 	// Start the server in a goroutine
 	go func() {

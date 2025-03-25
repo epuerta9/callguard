@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/epuerta/callguard/go-backend/internal/model"
 	"github.com/epuerta/callguard/go-backend/internal/repository"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -57,9 +59,11 @@ func (s *UserService) Login(ctx context.Context, params *model.LoginRequest) (*m
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Generate a token (in a real application, you would generate a JWT)
-	// This is a simple placeholder
-	token := generateDummyToken(user.ID)
+	// Generate a JWT token
+	token, err := generateToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	return &model.LoginResponse{
 		User:  user,
@@ -101,8 +105,17 @@ func (s *UserService) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
-// generateDummyToken generates a dummy token for demonstration purposes
-// In a real application, you would generate a JWT with appropriate claims
-func generateDummyToken(userID string) string {
-	return "dummy_token_" + userID + "_" + time.Now().Format(time.RFC3339)
+// generateToken generates a JWT token for the given user ID
+func generateToken(userID string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": userID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }

@@ -49,39 +49,65 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.U
 
 // Create creates a new user
 func (r *UserRepository) Create(ctx context.Context, req *model.RegisterRequest, passwordHash string) (*model.User, error) {
-	// Placeholder implementation
-	return &model.User{
-		ID:           uuid.New().String(),
+	// Create user in database
+	dbUser, err := r.db.CreateUser(ctx, db.CreateUserParams{
 		Name:         req.Name,
 		Email:        req.Email,
 		PasswordHash: passwordHash,
-		CreatedAt:    "2023-06-01T10:00:00Z",
-		UpdatedAt:    "2023-06-01T10:00:00Z",
-	}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return convertDBUserToUser(dbUser), nil
 }
 
 // Update updates an existing user
 func (r *UserRepository) Update(ctx context.Context, id string, req *model.UpdateUserRequest, newPasswordHash string) (*model.User, error) {
-	// Placeholder implementation
-	passwordHash := "existing-hash"
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get existing user to preserve unchanged fields
+	existingUser, err := r.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update only provided fields
+	name := existingUser.Name
+	if req.Name != "" {
+		name = req.Name
+	}
+
+	passwordHash := existingUser.PasswordHash
 	if newPasswordHash != "" {
 		passwordHash = newPasswordHash
 	}
 
-	return &model.User{
-		ID:           id,
-		Name:         req.Name,
-		Email:        req.Email,
+	// Update user in database
+	dbUser, err := r.db.UpdateUser(ctx, db.UpdateUserParams{
+		ID:           userID,
+		Name:         name,
+		Email:        existingUser.Email,
 		PasswordHash: passwordHash,
-		CreatedAt:    "2023-06-01T10:00:00Z",
-		UpdatedAt:    "2023-06-01T11:00:00Z",
-	}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return convertDBUserToUser(dbUser), nil
 }
 
 // Delete deletes a user
 func (r *UserRepository) Delete(ctx context.Context, id string) error {
-	// Placeholder implementation
-	return nil
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+
+	return r.db.DeleteUser(ctx, userID)
 }
 
 // convertDBUserToUser converts a db.User to a model.User

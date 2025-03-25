@@ -10,6 +10,7 @@ import (
 	vapiclient "github.com/VapiAI/server-sdk-go/client"
 	"github.com/VapiAI/server-sdk-go/option"
 	"github.com/epuerta/callguard/go-backend/internal/config"
+	"github.com/epuerta/callguard/go-backend/internal/db"
 	"github.com/epuerta/callguard/go-backend/internal/model"
 	"github.com/epuerta/callguard/go-backend/internal/service"
 	"github.com/joho/godotenv"
@@ -18,7 +19,7 @@ import (
 )
 
 // NewRouter creates a new API router
-func NewRouter(cfg *config.Config, userService *service.UserService, callLogService *service.CallLogService) *echo.Echo {
+func NewRouter(cfg *config.Config, userService *service.UserService, callLogService *service.CallLogService, queries *db.Queries) *echo.Echo {
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: Error loading .env file: %v", err)
@@ -31,6 +32,9 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 	vapiService := service.NewVapiService(vapiClient)
 	// Create webhook service
 	webhookService := service.NewWebhookService(callLogService, vapiService)
+
+	// Create user handler
+	uh := userHandler(userService)
 
 	// Middlewares
 	e.Use(middleware.Logger())
@@ -48,6 +52,12 @@ func NewRouter(cfg *config.Config, userService *service.UserService, callLogServ
 		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not readily refused by browsers
 	}))
+
+	// Auth routes
+	e.POST("/auth/signup", uh.register)
+	e.POST("/auth/login", uh.login)
+	e.GET("/auth/me", uh.getCurrent)
+	e.PUT("/auth/me", uh.updateCurrent)
 
 	// Health check
 	e.GET("/health", func(c echo.Context) error {
