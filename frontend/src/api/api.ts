@@ -1,7 +1,7 @@
 import { toast } from "@/hooks/use-toast";
 import { useStore } from "@/context/store-context";
 
-const host = "https://api.octavio.co";
+const host = "http://localhost:8000";
 
 const headers = async () => {
   const result: { [key: string]: string } = {
